@@ -6,7 +6,10 @@
 (function () {
     'use strict';
 
-    const BACKEND_URL = 'http://localhost:5000/api';
+    // Auto-detect environment: use Render backend when live, localhost when developing
+    const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000/api'
+        : 'https://wanderai-backend.onrender.com/api';
 
     /* --------------------------------------------------------------------------
        1. GLOBAL STATE & CONFIGURATION
