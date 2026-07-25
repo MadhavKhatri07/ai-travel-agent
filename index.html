@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WanderAI — AI Travel Agent & Public Itinerary Planner</title>
+    <meta name="description" content="Plan perfect trips with AI. Real-time geocoding, weather forecasts, route navigation, Google Maps integration, iCal calendar export, and smart packing lists.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        
+        <!-- Navigation Bar -->
+        <header class="navbar">
+            <div class="nav-brand" id="brandLogo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-compass fa-spin-pulse" style="--fa-animation-duration: 12s;"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="brand-name">Wander<span class="highlight">AI</span></span>
+                    <span class="brand-badge">Public Production 3.0</span>
+                </div>
+            </div>
+            
+            <nav class="nav-links">
+                <a href="#planner-form" class="nav-link active"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Planner</a>
+                <a href="#saved-trips" class="nav-link" id="savedTripsBtn">
+                    <i class="fa-solid fa-bookmark"></i> Saved Trips 
+                    <span class="badge" id="savedCount">0</span>
+                </a>
+                <button class="icon-btn" id="apiSettingsBtn" title="API Settings">
+                    <i class="fa-solid fa-key"></i>
+                </button>
+                <button class="icon-btn" id="themeToggleBtn" title="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Hero Section -->
+        <section class="hero-section">
+            <div class="hero-bg" style="background-image: url('assets/hero-bg.jpg');"></div>
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <div class="hero-tag">
+                    <i class="fa-solid fa-sparkles"></i> Public Production AI Travel Engine
+                </div>
+                <h1 class="hero-title">Plan Practical Trips with <span class="text-gradient">Real-Time AI</span></h1>
+                <p class="hero-subtitle">Accurate OpenStreetMap route spatial ordering, live Open-Meteo weather forecasts, Google Maps direction links, Booking.com hotel deep-links, and iCal calendar export.</p>
+                
+                <!-- Quick Destination Chips -->
+                <div class="quick-destinations">
+                    <span class="quick-label">Popular destinations worldwide:</span>
+                    <div class="chips-container">
+                        <button class="chip-btn" data-dest="Tokyo, Japan">🌸 Tokyo</button>
+                        <button class="chip-btn" data-dest="Paris, France">🗼 Paris</button>
+                        <button class="chip-btn" data-dest="Bali, Indonesia">🌴 Bali</button>
+                        <button class="chip-btn" data-dest="New York, USA">🗽 New York</button>
+                        <button class="chip-btn" data-dest="Rome, Italy">🏛️ Rome</button>
+                        <button class="chip-btn" data-dest="Dubai, UAE">🌆 Dubai</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Planner Form Section (Inputs) -->
+        <section class="form-section" id="planner-form">
+            <div class="form-card glass-panel">
+                <div class="form-header">
+                    <h2><i class="fa-solid fa-paper-plane text-primary"></i> Create Practical Travel Itinerary</h2>
+                    <p>Enter your origin, destination, and budget to generate a usable, real-world trip plan.</p>
+                </div>
+                
+                <form id="travelForm" class="planner-form">
+                    <div class="form-grid">
+                        
+                        <!-- 1. Origin City Input (Practical Flight Search) -->
+                        <div class="form-group">
+                            <label for="originInput"><i class="fa-solid fa-plane-departure"></i> Origin City (Optional)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-city input-icon"></i>
+                                <input type="text" id="originInput" placeholder="e.g. New York or London or New Delhi" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- 2. Destination Input -->
+                        <div class="form-group">
+                            <label for="locationInput"><i class="fa-solid fa-location-dot"></i> Destination City / Country</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                                <input type="text" id="locationInput" placeholder="e.g. Kyoto, Japan or Barcelona, Spain" required autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- 3. Days Input -->
+                        <div class="form-group">
+                            <label for="daysInput"><i class="fa-solid fa-calendar-days"></i> Trip Duration (Days)</label>
+                            <div class="number-counter">
+                                <button type="button" class="counter-btn" id="decrementDays">-</button>
+                                <input type="number" id="daysInput" value="3" min="1" max="14" required>
+                                <button type="button" class="counter-btn" id="incrementDays">+</button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Currency Selector -->
+                        <div class="form-group">
+                            <label for="currencySelect"><i class="fa-solid fa-coins"></i> Display Currency</label>
+                            <select id="currencySelect" class="custom-select">
+                                <option value="USD" selected>USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="INR">INR (₹)</option>
+                                <option value="GBP">GBP (£)</option>
+                            </select>
+                        </div>
+
+                        <!-- 5. Budget Tier & Amount -->
+                        <div class="form-group span-full">
+                            <label><i class="fa-solid fa-wallet"></i> Budget Tier</label>
+                            <div class="budget-tiers" id="budgetTierGroup">
+                                <label class="budget-card active" data-tier="budget">
+                                    <input type="radio" name="budgetTier" value="budget" checked hidden>
+                                    <div class="tier-icon">💵</div>
+                                    <div class="tier-name">Economy / Backpacker</div>
+                                    <div class="tier-desc">Hostels, public transit & street eats</div>
+                                </label>
+                                <label class="budget-card" data-tier="moderate">
+                                    <input type="radio" name="budgetTier" value="moderate" hidden>
+                                    <div class="tier-icon">💳</div>
+                                    <div class="tier-name">Moderate / Standard</div>
+                                    <div class="tier-desc">3-4★ hotels & casual dining</div>
+                                </label>
+                                <label class="budget-card" data-tier="luxury">
+                                    <input type="radio" name="budgetTier" value="luxury" hidden>
+                                    <div class="tier-icon">💎</div>
+                                    <div class="tier-name">Luxury / VIP</div>
+                                    <div class="tier-desc">5★ Resorts & fine dining</div>
+                                </label>
+                            </div>
+
+                            <div class="custom-budget-row mt-3">
+                                <label for="customBudget" class="sub-label">Or specify total target budget limit:</label>
+                                <div class="input-wrapper budget-input-wrap">
+                                    <span class="currency-prefix" id="currencyPrefix">$</span>
+                                    <input type="number" id="customBudget" placeholder="e.g. 1500" min="50">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Travel Style Vibe -->
+                        <div class="form-group span-full">
+                            <label><i class="fa-solid fa-compass-drafting"></i> Travel Vibe</label>
+                            <div class="vibe-tags" id="vibeGroup">
+                                <span class="vibe-tag active" data-vibe="Balanced">⚖️ Balanced Mix</span>
+                                <span class="vibe-tag" data-vibe="Cultural">🏛️ Cultural & History</span>
+                                <span class="vibe-tag" data-vibe="Foodie">🍜 Culinary & Night Markets</span>
+                                <span class="vibe-tag" data-vibe="Adventure">🧗 Thrill & Nature</span>
+                                <span class="vibe-tag" data-vibe="Relaxation">🏖️ Chill & Beaches</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-hero" id="generateBtn">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Public Travel Itinerary
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Loading State Overlay Modal -->
+        <div class="modal-overlay" id="loadingModal">
+            <div class="modal-card loading-card">
+                <div class="spinner-container">
+                    <div class="pulse-ring"></div>
+                    <i class="fa-solid fa-plane-up fa-bounce loader-plane"></i>
+                </div>
+                <h3 id="loaderTitle">Connecting to Real-Time APIs...</h3>
+                <p id="loaderSubtitle">Querying OpenStreetMap spatial nodes, live weather forecasts, and route directions.</p>
+                
+                <div class="loading-progress-steps">
+                    <div class="step-item active" id="step1">
+                        <i class="fa-solid fa-circle-notch fa-spin step-icon"></i>
+                        <span>Geocoding coordinates via OpenStreetMap Nominatim...</span>
+                    </div>
+                    <div class="step-item" id="step2">
+                        <i class="fa-regular fa-circle step-icon"></i>
+                        <span>Fetching live weather from Open-Meteo meteorological API...</span>
+                    </div>
+                    <div class="step-item" id="step3">
+                        <i class="fa-regular fa-circle step-icon"></i>
+                        <span>Calculating spatial haversine distances & route navigation...</span>
+                    </div>
+                    <div class="step-item" id="step4">
+                        <i class="fa-regular fa-circle step-icon"></i>
+                        <span>Building iCal calendar sync & booking deep links...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Result Section (Itinerary Dashboard) -->
+        <section class="results-section hidden" id="resultsSection">
+            
+            <!-- Result Header Banner -->
+            <div class="result-banner glass-panel">
+                <div class="banner-main">
+                    <div class="banner-title-area">
+                        <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Real-Time Plan Ready</span>
+                        <h2 id="resDestinationTitle">Kyoto, Japan</h2>
+                        <p class="res-meta-info" id="resMetaInfo">3 Days • Moderate Budget • Balanced Vibe</p>
+                    </div>
+                    <div class="banner-actions">
+                        <button class="btn btn-secondary" id="shareLinkBtn" title="Share Trip Link">
+                            <i class="fa-solid fa-share-nodes"></i> Share Link
+                        </button>
+                        <button class="btn btn-secondary" id="exportIcalBtn" title="Export to Google/Apple iCal Calendar">
+                            <i class="fa-solid fa-calendar-plus"></i> Sync iCal
+                        </button>
+                        <button class="btn btn-secondary" id="saveTripBtn">
+                            <i class="fa-regular fa-bookmark"></i> Save
+                        </button>
+                        <button class="btn btn-secondary" id="printTripBtn">
+                            <i class="fa-solid fa-file-pdf"></i> Print PDF
+                        </button>
+                        <button class="btn btn-primary" id="openRefinerBtn">
+                            <i class="fa-solid fa-sliders"></i> Refine Plan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Practical Country Info Bar -->
+                <div class="practical-info-bar" id="practicalInfoBar">
+                    <!-- Dynamic country emergency, plug, tipping, language info -->
+                </div>
+
+                <!-- Trip Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon bg-blue"><i class="fa-solid fa-cloud-sun"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Live Weather</span>
+                            <span class="metric-value" id="metWeather">22°C Clear</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon bg-green"><i class="fa-solid fa-coins"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Estimated Total Budget</span>
+                            <span class="metric-value" id="metBudget">$1,250 USD</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon bg-purple"><i class="fa-solid fa-hotel"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Live Booking Stays</span>
+                            <span class="metric-value" id="metHotelsCount">3 Stays</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon bg-orange"><i class="fa-solid fa-location-dot"></i></div>
+                        <div class="metric-info">
+                            <span class="metric-label">Mapped Destinations</span>
+                            <span class="metric-value" id="metPlacesCount">9 Spots</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Practical Shortcuts Bar (Flights & Hotels) -->
+                <div class="practical-actions-row">
+                    <a id="linkGoogleFlights" target="_blank" class="practical-link-btn btn-flight">
+                        <i class="fa-solid fa-plane"></i> Search Flights on Google Flights
+                    </a>
+                    <a id="linkBookingHotels" target="_blank" class="practical-link-btn btn-hotel">
+                        <i class="fa-solid fa-hotel"></i> Search Stays on Booking.com
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tabbed View Navigation -->
+            <div class="tabs-nav">
+                <button class="tab-btn active" data-tab="tab-itinerary">
+                    <i class="fa-solid fa-calendar-day"></i> Daily Navigation Routes
+                </button>
+                <button class="tab-btn" data-tab="tab-hotels">
+                    <i class="fa-solid fa-hotel"></i> Hotels & Stays
+                </button>
+                <button class="tab-btn" data-tab="tab-food">
+                    <i class="fa-solid fa-utensils"></i> Food & Cuisine
+                </button>
+                <button class="tab-btn" data-tab="tab-map">
+                    <i class="fa-solid fa-map-location-dot"></i> Interactive Route Map
+                </button>
+                <button class="tab-btn" data-tab="tab-packing">
+                    <i class="fa-solid fa-suitcase"></i> Weather-Aware Checklist
+                </button>
+            </div>
+
+            <!-- Tab Content Containers -->
+            <div class="tab-contents">
+                
+                <!-- Tab 1: Daily Itinerary & Routes -->
+                <div class="tab-pane active" id="tab-itinerary">
+                    <div class="day-selector-bar" id="daySelectorBar">
+                        <!-- Dynamic day filter chips -->
+                    </div>
+
+                    <div class="itinerary-timeline" id="itineraryTimeline">
+                        <!-- Dynamic day timeline cards -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Hotels -->
+                <div class="tab-pane" id="tab-hotels">
+                    <div class="section-intro flex-between">
+                        <div>
+                            <h3><i class="fa-solid fa-hotel text-primary"></i> Real Lodging Options & Direct Deep Links</h3>
+                            <p>Matched to your budget level with live booking portal integration.</p>
+                        </div>
+                    </div>
+                    <div class="hotels-grid" id="hotelsGrid">
+                        <!-- Dynamic hotel cards -->
+                    </div>
+                </div>
+
+                <!-- Tab 3: Food & Cuisine -->
+                <div class="tab-pane" id="tab-food">
+                    <div class="section-intro">
+                        <h3><i class="fa-solid fa-utensils text-orange"></i> Culinary Guide & Verified Spots</h3>
+                        <p>Must-try local delicacies, famous food streets, and direct Google Maps locations.</p>
+                    </div>
+                    <div class="food-grid" id="foodGrid">
+                        <!-- Dynamic food & restaurant cards -->
+                    </div>
+                </div>
+
+                <!-- Tab 4: Interactive Route Map -->
+                <div class="tab-pane" id="tab-map">
+                    <div class="map-wrapper glass-panel">
+                        <div class="map-controls">
+                            <span class="map-legend"><i class="fa-solid fa-circle text-purple"></i> Hotel</span>
+                            <span class="map-legend"><i class="fa-solid fa-circle text-blue"></i> Attraction</span>
+                            <span class="map-legend"><i class="fa-solid fa-circle text-orange"></i> Dining</span>
+                        </div>
+                        <div id="mapContainer" class="leaflet-map-box"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Packing List -->
+                <div class="tab-pane" id="tab-packing">
+                    <div class="section-intro flex-between">
+                        <div>
+                            <h3><i class="fa-solid fa-suitcase text-green"></i> Weather & Practical Packing Checklist</h3>
+                            <p>Auto-generated based on destination weather, duration, and local electrical plug type.</p>
+                        </div>
+                        <div class="packing-progress-bar">
+                            <span id="packingProgressText">0 / 0 Packed</span>
+                            <div class="progress-track"><div class="progress-fill" id="packingProgressFill"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="add-custom-pack mt-3">
+                        <input type="text" id="newPackItemInput" placeholder="Add custom item to packing list...">
+                        <button class="btn btn-secondary" id="addPackItemBtn"><i class="fa-solid fa-plus"></i> Add Item</button>
+                    </div>
+
+                    <div class="packing-categories" id="packingListContainer">
+                        <!-- Dynamic packing list categories -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- AI Refiner Panel -->
+            <div class="refiner-bar glass-panel" id="refinerBar">
+                <div class="refiner-header">
+                    <h4><i class="fa-solid fa-wand-magic-sparkles text-primary"></i> Refine Plan in Real-Time</h4>
+                    <button class="close-btn" id="closeRefinerBtn">&times;</button>
+                </div>
+                <div class="refiner-input-group">
+                    <input type="text" id="refinePromptInput" placeholder="e.g., 'Make Day 2 budget friendly', 'Add vegetarian food choices'...">
+                    <button class="btn btn-primary" id="sendRefineBtn">
+                        <i class="fa-solid fa-paper-plane"></i> Update
+                    </button>
+                </div>
+                <div class="refine-chips">
+                    <span class="refine-chip" data-prompt="Find cheaper budget hotel options">💵 Cheaper Hotels</span>
+                    <span class="refine-chip" data-prompt="Add more vegetarian food spots">🥗 More Vegetarian</span>
+                    <span class="refine-chip" data-prompt="Make itinerary more relaxed with fewer spots per day">☕ More Relaxed Pace</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Saved Trips Modal -->
+        <div class="modal-overlay" id="savedTripsModal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-bookmark text-primary"></i> Saved Trips</h3>
+                    <button class="close-btn" id="closeSavedModalBtn">&times;</button>
+                </div>
+                <div class="saved-trips-list" id="savedTripsList">
+                    <!-- Dynamic saved trips items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- API Settings Modal -->
+        <div class="modal-overlay" id="apiSettingsModal">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-key text-primary"></i> AI Engine Settings</h3>
+                    <button class="close-btn" id="closeApiModalBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>WanderAI works automatically out-of-the-box using built-in OpenStreetMap and Open-Meteo live engines. You can optionally provide your Gemini API key for direct custom LLM calls.</p>
+                    <div class="form-group mt-3">
+                        <label for="geminiApiKeyInput">Google Gemini API Key (Optional)</label>
+                        <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="clearApiKeyBtn">Clear Key</button>
+                    <button class="btn btn-primary" id="saveApiKeyBtn">Save Key</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
